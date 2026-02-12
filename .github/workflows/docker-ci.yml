@@ -2,7 +2,7 @@ name: Build, push and smoke-test Java Docker image
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
     inputs:
       run_smoke_test:
@@ -14,6 +14,9 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
+      -  name: Debug repository name
+         run: echo "Repo is ${{ secrets.DOCKERHUB_REPOSITORY }}"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
