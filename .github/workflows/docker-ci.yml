@@ -29,28 +29,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: ./Java_Application
-          file: ./Java_Application/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_REPOSITORY }}:latest
-            ${{ secrets.DOCKERHUB_REPOSITORY }}:${{ github.sha }}
-
-      - name: Smoke-test pushed image
-        if: ${{ github.event.inputs.run_smoke_test == 'true' }}
-        env:
-          IMAGE: ${{ secrets.DOCKERHUB_REPOSITORY }}:${{ github.sha }}
+      - name: Build 
         run: |
-          echo "Pulling image $IMAGE"
-          docker pull "$IMAGE"
-          echo "Running container..."
-          docker run -d --name smoke_test -e ENVIRONMENT=ci "$IMAGE" || true
-          sleep 5
-          echo "Container logs:"
-          docker logs smoke_test || true
-          docker rm -f smoke_test || true
+          docker build -t informs -f Dockerfile_Pipeline/Dockerfile .
