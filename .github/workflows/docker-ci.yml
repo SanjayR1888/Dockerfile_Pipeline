@@ -13,10 +13,8 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    steps:
-      -  name: Debug repository name
-         run: echo "Repo is ${{ secrets.DOCKERHUB_REPOSITORY }}"
 
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -32,6 +30,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build 
+      - name: Set image tag
+        id: vars
+        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
         run: |
-          docker build -t informs -f Dockerfile_Pipeline/Dockerfile .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/informs:${{ steps.vars.outputs.TAG }} \
+                       -t ${{ secrets.DOCKERHUB_USERNAME }}/informs:latest .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/informs:${{ steps.vars.outputs.TAG }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/informs:latest
+
+      - name: Smoke Test (optional)
+        if: ${{ github.event.inputs.run_smoke_test != 'false' }}
+        run: |
+          docker run -d -p 8080:8080 --name test-container \
+            ${{ secrets.DOCKERHUB_USERNAME }}/informs:latest
+          sleep 10
+          curl -f http://localhost:8080 || exit 1
+          docker stop test-container
+          docker rm test-container
